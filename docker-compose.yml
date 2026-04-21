@@ -29,15 +29,15 @@ services:
       ConnectionStrings__DefaultConnection: "Server=pandora-db,1433;Database=PandoraDB;User Id=sa;Password=${DB_PASSWORD:-PandoraAdmin2024!};TrustServerCertificate=true;Encrypt=false;Connect Timeout=30;"
       ConnectionStrings__PandoraDb: "Server=pandora-db,1433;Database=PandoraDB;User Id=sa;Password=${DB_PASSWORD:-PandoraAdmin2024!};TrustServerCertificate=true;Encrypt=false;Connect Timeout=30;"
 
-      # ── JWT ────────────────────────────────────────────────────────────────
-      Jwt__Key:              ${JWT_KEY:-Pandora_SuperSecret_Docker_Key_2024_Min32Chars!}
+      # ── JWT — NO usar el default en producción, setear JWT_KEY en .env ───────
+      Jwt__Key:              ${JWT_KEY:?JWT_KEY es obligatorio en produccion}
       Jwt__Issuer:           PandoraAPI
       Jwt__Audience:         PandoraClient
-      Jwt__ExpiresInMinutes: 480
-      JwtSettings__Key:      ${JWT_KEY:-Pandora_SuperSecret_Docker_Key_2024_Min32Chars!}
+      Jwt__ExpiresInMinutes: 30
+      JwtSettings__Key:      ${JWT_KEY:?JWT_KEY es obligatorio en produccion}
       JwtSettings__Issuer:   PandoraAPI
       JwtSettings__Audience: PandoraClient
-      JwtSettings__ExpiresInMinutes: 480
+      JwtSettings__ExpiresInMinutes: 30
 
       # ── Biblioteca Virtual ─────────────────────────────────────────────────
       Biblioteca__LibrosPath: /app/biblioteca
@@ -72,8 +72,10 @@ services:
       ACCEPT_EULA:  "Y"
       SA_PASSWORD:  ${DB_PASSWORD:-PandoraAdmin2024!}
       MSSQL_PID:    Express          # gratis, hasta 10 GB
-    ports:
-      - "${DB_PORT:-1433}:1433"      # comentar en producción si no se necesita acceso externo
+    # Puerto 1433 NO expuesto al host — la app se comunica por la red interna pandora-net
+    # Descomentar SOLO para administración temporal con una herramienta externa:
+    # ports:
+    #   - "127.0.0.1:${DB_PORT:-1433}:1433"   # 127.0.0.1 = solo localhost, nunca internet
     volumes:
       - pandora-sqldata:/var/opt/mssql
     healthcheck:
