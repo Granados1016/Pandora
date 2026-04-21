@@ -36,6 +36,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
 # ── Copiar artefactos pre-compilados del backend ──────────────────────────────
 COPY backend/Pandora.API/bin/Debug/net8.0/ ./
 
+# ── Reemplazar Microsoft.Data.SqlClient con versión compatible con Linux ───────
+# v5.0.0 (compilada en Windows) tiene un bug de Registro de Windows en Linux.
+# Se reemplaza con v5.2.2 runtimes/unix/lib/net8.0 del caché NuGet local.
+COPY backend/linux-libs/Microsoft.Data.SqlClient.dll ./
+
 # ── Copiar build del frontend sobre wwwroot/ ──────────────────────────────────
 COPY --from=frontend /src/frontend/dist ./wwwroot/
 

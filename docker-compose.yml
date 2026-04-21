@@ -26,17 +26,18 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
 
       # ── Base de datos ──────────────────────────────────────────────────────
-      ConnectionStrings__DefaultConnection: >-
-        Server=pandora-db,1433;Database=PandoraDB;
-        User Id=sa;Password=${DB_PASSWORD:-PandoraAdmin2024!};
-        TrustServerCertificate=true;Encrypt=false;
-        ConnectTimeout=30;
+      ConnectionStrings__DefaultConnection: "Server=pandora-db,1433;Database=PandoraDB;User Id=sa;Password=${DB_PASSWORD:-PandoraAdmin2024!};TrustServerCertificate=true;Encrypt=false;Connect Timeout=30;"
+      ConnectionStrings__PandoraDb: "Server=pandora-db,1433;Database=PandoraDB;User Id=sa;Password=${DB_PASSWORD:-PandoraAdmin2024!};TrustServerCertificate=true;Encrypt=false;Connect Timeout=30;"
 
       # ── JWT ────────────────────────────────────────────────────────────────
-      Jwt__Key:             ${JWT_KEY:-Pandora_SuperSecret_Docker_Key_2024_Min32Chars!}
-      Jwt__Issuer:          PandoraAPI
-      Jwt__Audience:        PandoraClient
+      Jwt__Key:              ${JWT_KEY:-Pandora_SuperSecret_Docker_Key_2024_Min32Chars!}
+      Jwt__Issuer:           PandoraAPI
+      Jwt__Audience:         PandoraClient
       Jwt__ExpiresInMinutes: 480
+      JwtSettings__Key:      ${JWT_KEY:-Pandora_SuperSecret_Docker_Key_2024_Min32Chars!}
+      JwtSettings__Issuer:   PandoraAPI
+      JwtSettings__Audience: PandoraClient
+      JwtSettings__ExpiresInMinutes: 480
 
       # ── Biblioteca Virtual ─────────────────────────────────────────────────
       Biblioteca__LibrosPath: /app/biblioteca
