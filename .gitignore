@@ -1,0 +1,14 @@
+# Secretos — nunca al repositorio
+.env
+
+# Subdirectorios con sus propios repos git
+frontend/
+backend/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

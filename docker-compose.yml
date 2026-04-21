@@ -1,0 +1,109 @@
+version: '3.9'
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  PANDORA — docker-compose
+#
+#  Uso rápido:
+#    1. Copiar .env.example → .env  y editar las contraseñas
+#    2. docker compose up --build -d
+#    3. Abrir http://localhost:8080
+# ══════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # pandora  →  Aplicación (Backend API + Frontend React embebido)
+  # ────────────────────────────────────────────────────────────────────────────
+  pandora:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pandora-app
+    image: pandora:latest
+    ports:
+      - "${APP_PORT:-8080}:80"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+
+      # ── Base de datos ──────────────────────────────────────────────────────
+      ConnectionStrings__DefaultConnection: >-
+        Server=pandora-db,1433;Database=PandoraDB;
+        User Id=sa;Password=${DB_PASSWORD:-PandoraAdmin2024!};
+        TrustServerCertificate=true;Encrypt=false;
+        ConnectTimeout=30;
+
+      # ── JWT ────────────────────────────────────────────────────────────────
+      Jwt__Key:             ${JWT_KEY:-Pandora_SuperSecret_Docker_Key_2024_Min32Chars!}
+      Jwt__Issuer:          PandoraAPI
+      Jwt__Audience:        PandoraClient
+      Jwt__ExpiresInMinutes: 480
+
+      # ── Biblioteca Virtual ─────────────────────────────────────────────────
+      Biblioteca__LibrosPath: /app/biblioteca
+
+      # ── Usuario admin inicial ──────────────────────────────────────────────
+      AdminUser__Username: ${ADMIN_USER:-admin}
+      AdminUser__Password: ${ADMIN_PASS:-PandoraAdmin2024!}
+
+    volumes:
+      # Archivos subidos (portadas de libros, etc.) — persistente
+      - pandora-storage:/app/storage
+
+      # PDFs del Material Bibliográfico — bind mount desde el host (solo lectura)
+      # Cambiar la ruta izquierda si la carpeta está en otro lugar
+      - "${BIBLIOTECA_HOST_PATH:-../Material Bibliografico}:/app/biblioteca:ro"
+
+    depends_on:
+      pandora-db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - pandora-net
+
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # pandora-db  →  SQL Server 2022 Express
+  # ────────────────────────────────────────────────────────────────────────────
+  pandora-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: pandora-db
+    environment:
+      ACCEPT_EULA:  "Y"
+      SA_PASSWORD:  ${DB_PASSWORD:-PandoraAdmin2024!}
+      MSSQL_PID:    Express          # gratis, hasta 10 GB
+    ports:
+      - "${DB_PORT:-1433}:1433"      # comentar en producción si no se necesita acceso externo
+    volumes:
+      - pandora-sqldata:/var/opt/mssql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          /opt/mssql-tools18/bin/sqlcmd
+          -S localhost -U sa
+          -P "$$SA_PASSWORD"
+          -Q "SELECT 1"
+          -No -l 5
+          || exit 1
+      interval:     15s
+      timeout:      10s
+      retries:      10
+      start_period: 45s
+    restart: unless-stopped
+    networks:
+      - pandora-net
+
+
+# ── Volúmenes ─────────────────────────────────────────────────────────────────
+volumes:
+  pandora-storage:
+    name: pandora_storage
+  pandora-sqldata:
+    name: pandora_sqldata
+
+
+# ── Red interna ───────────────────────────────────────────────────────────────
+networks:
+  pandora-net:
+    name: pandora_network
+    driver: bridge
