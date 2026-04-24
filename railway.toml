@@ -1,0 +1,17 @@
+# ══════════════════════════════════════════════════════════════════════════════
+#  PANDORA — Railway deployment configuration
+#  Docs: https://docs.railway.app/reference/config-as-code
+# ══════════════════════════════════════════════════════════════════════════════
+
+[build]
+builder             = "dockerfile"
+dockerfilePath      = "Dockerfile"
+
+[deploy]
+# Railway asigna el puerto dinámicamente via $PORT.
+# Lo inyectamos a ASP.NET Core antes de arrancar (shell expande $PORT).
+startCommand        = "ASPNETCORE_URLS=http://+:$PORT dotnet Pandora.API.dll"
+healthcheckPath     = "/api/templates"
+healthcheckTimeout  = 300
+restartPolicyType   = "on_failure"
+restartPolicyMaxRetries = 5

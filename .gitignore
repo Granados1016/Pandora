@@ -1,9 +1,6 @@
 # Secretos — nunca al repositorio
 .env
-
-# Subdirectorios con sus propios repos git
-frontend/
-backend/
+*.env.local
 
 # OS
 .DS_Store
@@ -12,3 +9,16 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# ── Frontend — dependencias y build local ───────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# ── Backend — objetos intermedios de compilacion ────────────────────────────
+backend/Pandora.API/obj/
+backend/Pandora.API/bin/Debug/net8.0/storage/
+backend/Pandora.API/bin/Debug/net8.0/wwwroot/
+backend/Pandora.API/bin/Debug/net8.0/binSprint3Buildnet8.0/
+backend/Pandora.API/bin/Debug/net8.0/binSprint4Buildnet8.0/
+backend/Pandora.API/bin/Release/

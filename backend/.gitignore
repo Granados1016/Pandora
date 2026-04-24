@@ -1,0 +1,41 @@
+# Build output (excluir todo excepto artefactos de deploy)
+**/obj/
+**/bin/
+# Permitir los artefactos pre-compilados que usa el Dockerfile
+!Pandora.API/bin/
+!Pandora.API/bin/Debug/
+!Pandora.API/bin/Debug/net8.0/
+
+# .NET user files
+*.user
+*.suo
+*.userprefs
+.vs/
+
+# NuGet
+*.nupkg
+.nuget/
+packages/
+!**/.nuget/NuGet.Config
+
+# Entity Framework migrations (optional — remove if you want to track them)
+# **/Migrations/
+
+# Environment / secrets
+appsettings.Development.json
+appsettings.Production.json
+*.pfx
+*.key
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Storage / uploads generados en runtime
+**/storage/
+**/wwwroot/uploads/
+
+# Rider / VS
+.idea/
+.vscode/
+*.sln.DotSettings.user

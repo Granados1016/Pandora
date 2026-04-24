@@ -1,0 +1,45 @@
+# ── Node ──────────────────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/.vite/
+frontend/dist/
+
+# ── .NET build outputs ────────────────────────────────────────────────────────
+# bin/ se incluye porque contiene los artefactos pre-compilados necesarios para
+# el build (fuentes en cloud storage, no disponibles localmente)
+backend/**/obj/
+backend/Pandora.Application/bin/
+backend/Pandora.Domain/bin/
+backend/Pandora.Infrastructure/bin/
+
+# ── Storage local (runtime, no forma parte del build) ────────────────────────
+backend/Pandora.API/storage/
+backend/Pandora.API/wwwroot/uploads/
+
+# ── IDE y herramientas ────────────────────────────────────────────────────────
+**/.vs/
+**/.vscode/
+**/.idea/
+**/*.user
+**/*.suo
+**/launchSettings.json
+
+# ── Git ───────────────────────────────────────────────────────────────────────
+.git/
+.gitignore
+**/.gitkeep
+
+# ── Secretos locales ──────────────────────────────────────────────────────────
+.env
+**/.env.local
+**/appsettings.Development.json
+**/appsettings.Local.json
+
+# ── Documentación y scripts locales ──────────────────────────────────────────
+*.md
+*.ps1
+*.sh
+*.zip
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+docker-compose*.yml
+.dockerignore

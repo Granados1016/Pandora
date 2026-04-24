@@ -29,10 +29,6 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 
 WORKDIR /app
 
-# curl para healthcheck
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/*
-
 # ── Copiar artefactos pre-compilados del backend ──────────────────────────────
 COPY backend/Pandora.API/bin/Debug/net8.0/ ./
 
@@ -63,10 +59,7 @@ ENV ASPNETCORE_URLS=http://+:80 \
 
 EXPOSE 80
 
-# ── Healthcheck ───────────────────────────────────────────────────────────────
-# 401 = backend vivo (endpoint protegido responde), 200 = también válido
-HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=5 \
-  CMD curl -s -o /dev/null -w "%{http_code}" http://localhost:80/api/biblioteca/categorias \
-      | grep -qE "^(200|401)" || exit 1
+# Healthcheck gestionado por Railway vía railway.toml (healthcheckPath)
+HEALTHCHECK NONE
 
 ENTRYPOINT ["dotnet", "Pandora.API.dll"]
