@@ -259,23 +259,30 @@ public class CalendarController(IConfiguration config, ILogger<CalendarControlle
             await conn.OpenAsync(ct);
             await EnsureAttendeesColumnAsync(conn, ct);
 
-            // Obtener nombre de sala y verificar conflicto en una sola consulta
-            await using var checkCmd = conn.CreateCommand();
-            checkCmd.CommandText = """
-                SELECT rm.Name,
-                    (SELECT COUNT(1) FROM dbo.Reservations
-                     WHERE RoomId = @RoomId AND StartTime < @End AND EndTime > @Start) AS Conflicts
-                FROM dbo.Rooms rm WHERE rm.Id = @RoomId AND rm.IsActive = 1
-                """;
-            checkCmd.Parameters.AddWithValue("@RoomId", dto.RoomId);
-            checkCmd.Parameters.AddWithValue("@Start",  dto.StartTime);
-            checkCmd.Parameters.AddWithValue("@End",    dto.EndTime);
+            // Paso 1 — nombre de sala
+            string roomName;
+            using (var roomCmd = conn.CreateCommand())
+            {
+                roomCmd.CommandText = "SELECT Name FROM dbo.Rooms WHERE Id = @Id AND IsActive = 1";
+                roomCmd.Parameters.AddWithValue("@Id", dto.RoomId);
+                var nameObj = await roomCmd.ExecuteScalarAsync(ct);
+                if (nameObj is null || nameObj is DBNull) return BadRequest("Sala no encontrada o inactiva.");
+                roomName = (string)nameObj;
+            }
 
-            await using var cr = await checkCmd.ExecuteReaderAsync(ct);
-            if (!await cr.ReadAsync(ct)) return BadRequest("Sala no encontrada o inactiva.");
-            var roomName  = cr.GetString(0);
-            var conflicts = cr.GetInt32(1);
-            await cr.CloseAsync();
+            // Paso 2 — verificar conflicto de horario
+            int conflicts;
+            using (var conflictCmd = conn.CreateCommand())
+            {
+                conflictCmd.CommandText = """
+                    SELECT COUNT(1) FROM dbo.Reservations
+                    WHERE RoomId = @RoomId AND StartTime < @End AND EndTime > @Start
+                    """;
+                conflictCmd.Parameters.AddWithValue("@RoomId", dto.RoomId);
+                conflictCmd.Parameters.AddWithValue("@Start",  dto.StartTime);
+                conflictCmd.Parameters.AddWithValue("@End",    dto.EndTime);
+                conflicts = (int)(await conflictCmd.ExecuteScalarAsync(ct))!;
+            }
 
             if (conflicts > 0)
                 return Conflict($"La sala '{roomName}' ya está reservada en ese horario. Por favor elige otro horario o sala.");
@@ -328,24 +335,31 @@ public class CalendarController(IConfiguration config, ILogger<CalendarControlle
             await conn.OpenAsync(ct);
             await EnsureAttendeesColumnAsync(conn, ct);
 
-            // Verificar conflicto excluyendo la reservación actual
-            await using var checkCmd = conn.CreateCommand();
-            checkCmd.CommandText = """
-                SELECT rm.Name,
-                    (SELECT COUNT(1) FROM dbo.Reservations
-                     WHERE RoomId = @RoomId AND StartTime < @End AND EndTime > @Start AND Id <> @Id) AS Conflicts
-                FROM dbo.Rooms rm WHERE rm.Id = @RoomId AND rm.IsActive = 1
-                """;
-            checkCmd.Parameters.AddWithValue("@RoomId", dto.RoomId);
-            checkCmd.Parameters.AddWithValue("@Start",  dto.StartTime);
-            checkCmd.Parameters.AddWithValue("@End",    dto.EndTime);
-            checkCmd.Parameters.AddWithValue("@Id",     id);
+            // Paso 1 — nombre de sala
+            string roomName;
+            using (var roomCmd = conn.CreateCommand())
+            {
+                roomCmd.CommandText = "SELECT Name FROM dbo.Rooms WHERE Id = @RoomId AND IsActive = 1";
+                roomCmd.Parameters.AddWithValue("@RoomId", dto.RoomId);
+                var nameObj = await roomCmd.ExecuteScalarAsync(ct);
+                if (nameObj is null || nameObj is DBNull) return BadRequest("Sala no encontrada o inactiva.");
+                roomName = (string)nameObj;
+            }
 
-            await using var cr = await checkCmd.ExecuteReaderAsync(ct);
-            if (!await cr.ReadAsync(ct)) return BadRequest("Sala no encontrada o inactiva.");
-            var roomName  = cr.GetString(0);
-            var conflicts = cr.GetInt32(1);
-            await cr.CloseAsync();
+            // Paso 2 — verificar conflicto excluyendo la reservación actual
+            int conflicts;
+            using (var conflictCmd = conn.CreateCommand())
+            {
+                conflictCmd.CommandText = """
+                    SELECT COUNT(1) FROM dbo.Reservations
+                    WHERE RoomId = @RoomId AND StartTime < @End AND EndTime > @Start AND Id <> @Id
+                    """;
+                conflictCmd.Parameters.AddWithValue("@RoomId", dto.RoomId);
+                conflictCmd.Parameters.AddWithValue("@Start",  dto.StartTime);
+                conflictCmd.Parameters.AddWithValue("@End",    dto.EndTime);
+                conflictCmd.Parameters.AddWithValue("@Id",     id);
+                conflicts = (int)(await conflictCmd.ExecuteScalarAsync(ct))!;
+            }
 
             if (conflicts > 0)
                 return Conflict($"La sala '{roomName}' ya está reservada en ese horario. Por favor elige otro horario o sala.");
