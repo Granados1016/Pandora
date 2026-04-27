@@ -185,14 +185,14 @@ export default function InventoryItems() {
     }
     setSaving(true);
     // eslint-disable-next-line no-unused-vars
-    const { _deptId, _employeeId, ...formData } = form;
+    // eslint-disable-next-line no-unused-vars
+    const { _deptId, _employeeId, decommissionDate, decommissionReason, phoneNumber, imei, pinPattern, ...formData } = form;
     const payload = {
       ...formData,
+      status:             STATUS_OPTIONS.find(o => o.value === form.status)?.label ?? 'Activo',
       assignedEmployeeId: _employeeId || null,
-      purchasePrice:  form.purchasePrice !== '' ? parseFloat(form.purchasePrice) : null,
-      purchaseDate:   form.purchaseDate   || null,
-      decommissionDate: form.decommissionDate || null,
-      decommissionReason: form.decommissionReason || null,
+      purchasePrice:      form.purchasePrice !== '' ? parseFloat(form.purchasePrice) : null,
+      purchaseDate:       form.purchaseDate  || null,
     };
     try {
       if (editing) {
@@ -373,7 +373,7 @@ export default function InventoryItems() {
                     <Typography variant="caption" color="text.secondary">{item.model}</Typography>
                   </TableCell>
                   <TableCell sx={{ fontFamily: 'monospace', fontSize: 12 }}>{item.serialNumber}</TableCell>
-                  <TableCell>{item.assignedEmployeeName || item.assignedTo || <Typography variant="caption" color="text.disabled">Sin asignar</Typography>}</TableCell>
+                  <TableCell>{item.employeeName || item.assignedTo || <Typography variant="caption" color="text.disabled">Sin asignar</Typography>}</TableCell>
                   <TableCell>{item.department || '—'}</TableCell>
                   <TableCell align="center">
                     <Chip label={statusLabel(item.status)} color={statusColor(item.status)} size="small" />
