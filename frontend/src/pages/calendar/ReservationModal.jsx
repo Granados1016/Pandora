@@ -23,7 +23,12 @@ const DAYS = [
   { code: 'SU', label: 'D' },
 ];
 
-const toLocal = (dt) => dt ? new Date(dt).toISOString().slice(0, 16) : '';
+const toLocal = (dt) => {
+  if (!dt) return '';
+  const d = new Date(dt);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
 const EMPTY_FORM = {
   title: '', description: '', roomId: '',
   start: '', end: '',
