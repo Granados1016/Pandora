@@ -131,7 +131,11 @@ export default function ReservationModal({ open, onClose, onSaved, rooms, employ
       onSaved();
       onClose();
     } catch (e) {
-      setError(e.response?.data || 'Error al guardar la reserva.');
+      const status = e.response?.status;
+      const msg    = typeof e.response?.data === 'string'
+        ? e.response.data
+        : e.response?.data?.message || 'Error al guardar la reserva.';
+      setError(status === 409 ? `⚠️ Conflicto de horario: ${msg}` : msg);
     } finally {
       setSaving(false);
     }
