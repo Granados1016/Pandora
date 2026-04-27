@@ -185,11 +185,9 @@ export default function InventoryItems() {
     }
     setSaving(true);
     // eslint-disable-next-line no-unused-vars
-    // eslint-disable-next-line no-unused-vars
     const { _deptId, _employeeId, decommissionDate, decommissionReason, phoneNumber, imei, pinPattern, ...formData } = form;
     const payload = {
       ...formData,
-      status:             STATUS_OPTIONS.find(o => o.value === form.status)?.label ?? 'Activo',
       assignedEmployeeId: _employeeId || null,
       purchasePrice:      form.purchasePrice !== '' ? parseFloat(form.purchasePrice) : null,
       purchaseDate:       form.purchaseDate  || null,
