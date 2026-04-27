@@ -17,6 +17,7 @@ import PhoneAndroidIcon from '@mui/icons-material/PhoneAndroid';
 import DownloadIcon from '@mui/icons-material/Download';
 import UploadIcon from '@mui/icons-material/Upload';
 import { inventoryApi, catalogApi } from '../../api/pandoraApi';
+import { apiError } from '../../api/apiError';
 import ExcelImportDialog from '../../components/inventory/ExcelImportDialog';
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
@@ -203,7 +204,7 @@ export default function InventoryItems() {
       setOpenItem(false);
       load();
     } catch (e) {
-      setError(e.response?.data || 'Error al guardar.');
+      setError(apiError(e, 'Error al guardar.'));
     } finally {
       setSaving(false);
     }
@@ -215,7 +216,7 @@ export default function InventoryItems() {
       await inventoryApi.deleteItem(id);
       load();
     } catch (e) {
-      setError(e.response?.data || 'Error al eliminar.');
+      setError(apiError(e, 'Error al eliminar.'));
     }
   };
 
@@ -250,7 +251,7 @@ export default function InventoryItems() {
       openHistoryDialog(historyItem);
       load();
     } catch (e) {
-      setError(e.response?.data || 'Error al registrar transferencia.');
+      setError(apiError(e, 'Error al registrar transferencia.'));
       setOpenTransfer(false);
     } finally {
       setSendingTransfer(false);

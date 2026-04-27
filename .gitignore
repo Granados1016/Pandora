@@ -17,8 +17,12 @@ frontend/.vite/
 
 # ── Backend — objetos intermedios de compilacion ────────────────────────────
 backend/Pandora.API/obj/
+backend/Pandora.API/bin/Release/
+# Carpetas de build anteriores (sprints viejos)
+backend/Pandora.API/binSprint3Buildnet8.0/
+backend/Pandora.API/binSprint4Buildnet8.0/
+# Artefactos no necesarios en el contenedor
 backend/Pandora.API/bin/Debug/net8.0/storage/
 backend/Pandora.API/bin/Debug/net8.0/wwwroot/
 backend/Pandora.API/bin/Debug/net8.0/binSprint3Buildnet8.0/
 backend/Pandora.API/bin/Debug/net8.0/binSprint4Buildnet8.0/
-backend/Pandora.API/bin/Release/
