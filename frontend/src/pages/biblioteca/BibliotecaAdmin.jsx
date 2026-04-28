@@ -17,6 +17,7 @@ import SyncIcon          from '@mui/icons-material/Sync';
 import FolderIcon        from '@mui/icons-material/Folder';
 import CheckCircleIcon   from '@mui/icons-material/CheckCircle';
 import { categoriasApi, librosApi } from '../../api/bibliotecaApi';
+import { apiError } from '../../api/apiError';
 
 const EMPTY_LIBRO = {
   titulo: '', autor: '', descripcion: '', anioPublicacion: '', isbn: '',
@@ -62,7 +63,7 @@ export default function BibliotecaAdmin() {
       setSyncDialogOpen(true);
       await loadData(); // recargar para reflejar los cambios
     } catch (e) {
-      setError(e.response?.data || 'Error al sincronizar desde carpetas.');
+      setError(apiError(e, 'Error al sincronizar desde carpetas.'));
     } finally {
       setSyncLoading(false);
     }
@@ -103,7 +104,7 @@ export default function BibliotecaAdmin() {
       setCatDialog({ open: false, editing: null });
       showSuccess(catDialog.editing ? 'Categoría actualizada.' : 'Categoría creada.');
     } catch (e) {
-      setError(e.response?.data || 'Error al guardar categoría.');
+      setError(apiError(e, 'Error al guardar categoría.'));
     } finally {
       setSaving(false);
     }
@@ -116,7 +117,7 @@ export default function BibliotecaAdmin() {
       await loadData();
       showSuccess('Categoría eliminada.');
     } catch (e) {
-      setError(e.response?.data || 'Error al eliminar.');
+      setError(apiError(e, 'Error al eliminar.'));
     }
   };
 
@@ -165,7 +166,7 @@ export default function BibliotecaAdmin() {
       setLibroDialog({ open: false, editing: null });
       showSuccess(libroDialog.editing ? 'Libro actualizado.' : 'Libro subido exitosamente.');
     } catch (e) {
-      setError(e.response?.data || 'Error al guardar libro.');
+      setError(apiError(e, 'Error al guardar libro.'));
     } finally {
       setSaving(false);
     }
@@ -199,7 +200,7 @@ export default function BibliotecaAdmin() {
       setSubDialog({ open: false, editing: null });
       showSuccess(subDialog.editing ? 'Subcategoría actualizada.' : 'Subcategoría creada.');
     } catch (e) {
-      setError(e.response?.data || 'Error al guardar subcategoría.');
+      setError(apiError(e, 'Error al guardar subcategoría.'));
     } finally {
       setSaving(false);
     }
@@ -212,7 +213,7 @@ export default function BibliotecaAdmin() {
       await loadData();
       showSuccess('Subcategoría eliminada.');
     } catch (e) {
-      setError(e.response?.data || 'Error al eliminar.');
+      setError(apiError(e, 'Error al eliminar.'));
     }
   };
 
@@ -223,7 +224,7 @@ export default function BibliotecaAdmin() {
       await loadData();
       showSuccess('Libro eliminado.');
     } catch (e) {
-      setError(e.response?.data || 'Error al eliminar.');
+      setError(apiError(e, 'Error al eliminar.'));
     }
   };
 
