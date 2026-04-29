@@ -2,13 +2,12 @@ import React, { useRef, useState, useEffect } from 'react';
 import DOMPurify from 'dompurify';
 import {
   Box, TextField, ToggleButton, ToggleButtonGroup, Typography,
-  Paper, Chip, Stack, Tooltip, Divider, Alert, IconButton, CircularProgress,
+  Paper, Chip, Stack, Tooltip, Divider, Alert, IconButton,
   Select, MenuItem,
 } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
-import CodeIcon from '@mui/icons-material/Code';
 import ImageIcon from '@mui/icons-material/Image';
 import FormatBoldIcon from '@mui/icons-material/FormatBold';
 import FormatItalicIcon from '@mui/icons-material/FormatItalic';
@@ -23,13 +22,10 @@ import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import FormatColorTextIcon from '@mui/icons-material/FormatColorText';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
-import TextStyle from '@tiptap/extension-text-style';
+import { TextStyle, FontSize } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import FontFamily from '@tiptap/extension-font-family';
-import { Extension } from '@tiptap/core';
-import { mediaApi } from '../api/pandoraApi';
 
 const FIXED_VARIABLES = [
   { token: '{{nombre}}',     label: 'Nombre',     color: 'primary' },
@@ -50,8 +46,7 @@ export function plainToHtml(text) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
-  const paragraphs = escaped.split(/\n{2,}/);
-  return paragraphs
+  return escaped.split(/\n{2,}/)
     .map(p => `<p style="margin:0 0 12px 0">${p.replace(/\n/g, '<br>')}</p>`)
     .join('');
 }
@@ -62,9 +57,8 @@ function ensureHtml(content) {
   return plainToHtml(content);
 }
 
-function renderPreview(body, isRawHtml, customVars) {
-  const html = isRawHtml ? body.replace(/\n/g, '<br>') : body;
-  let result = html;
+function renderPreview(body, customVars) {
+  let result = body;
   Object.entries(FIXED_PREVIEW).forEach(([token, val]) => {
     result = result.replaceAll(token, `<strong style="color:#1a237e">${val}</strong>`);
   });
@@ -77,40 +71,16 @@ function renderPreview(body, isRawHtml, customVars) {
   return result;
 }
 
-// Extensión personalizada para tamaño de fuente
-const FontSize = Extension.create({
-  name: 'fontSize',
-  addOptions() { return { types: ['textStyle'] }; },
-  addGlobalAttributes() {
-    return [{
-      types: this.options.types,
-      attributes: {
-        fontSize: {
-          default: null,
-          parseHTML: el => el.style.fontSize || null,
-          renderHTML: attrs => attrs.fontSize ? { style: `font-size: ${attrs.fontSize}` } : {},
-        },
-      },
-    }];
-  },
-  addCommands() {
-    return {
-      setFontSize: size => ({ chain }) => chain().setMark('textStyle', { fontSize: size }).run(),
-      unsetFontSize: () => ({ chain }) => chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run(),
-    };
-  },
-});
-
 const FONT_FAMILIES = [
   { label: 'Predeterminada', value: '' },
-  { label: 'Arial', value: 'Arial, sans-serif' },
-  { label: 'Times New Roman', value: 'Times New Roman, serif' },
-  { label: 'Georgia', value: 'Georgia, serif' },
-  { label: 'Verdana', value: 'Verdana, sans-serif' },
-  { label: 'Courier New', value: 'Courier New, monospace' },
+  { label: 'Arial',          value: 'Arial, sans-serif' },
+  { label: 'Times New Roman',value: 'Times New Roman, serif' },
+  { label: 'Georgia',        value: 'Georgia, serif' },
+  { label: 'Verdana',        value: 'Verdana, sans-serif' },
+  { label: 'Courier New',    value: 'Courier New, monospace' },
 ];
 
-const FONT_SIZES = ['10px', '11px', '12px', '13px', '14px', '16px', '18px', '20px', '24px', '28px', '32px'];
+const FONT_SIZES = ['10px','11px','12px','13px','14px','16px','18px','20px','24px','28px','32px'];
 
 function RichToolbar({ editor }) {
   const colorRef = useRef(null);
@@ -153,17 +123,14 @@ function RichToolbar({ editor }) {
 
       <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
 
-      <Select
-        size="small"
-        value={currentFamily}
+      <Select size="small" value={currentFamily} displayEmpty
         onChange={e => {
-          const val = e.target.value;
-          if (!val) editor.chain().focus().unsetFontFamily().run();
-          else editor.chain().focus().setFontFamily(val).run();
+          const v = e.target.value;
+          v ? editor.chain().focus().setFontFamily(v).run()
+            : editor.chain().focus().unsetFontFamily().run();
         }}
-        displayEmpty
         sx={{ fontSize: 12, height: 28, minWidth: 120, '.MuiSelect-select': { py: 0.25, px: 1 } }}
-        renderValue={val => FONT_FAMILIES.find(f => f.value === val)?.label || 'Fuente'}
+        renderValue={v => FONT_FAMILIES.find(f => f.value === v)?.label || 'Fuente'}
       >
         {FONT_FAMILIES.map(f => (
           <MenuItem key={f.value} value={f.value} sx={{ fontFamily: f.value || 'inherit', fontSize: 13 }}>
@@ -172,17 +139,14 @@ function RichToolbar({ editor }) {
         ))}
       </Select>
 
-      <Select
-        size="small"
-        value={currentSize}
+      <Select size="small" value={currentSize} displayEmpty
         onChange={e => {
-          const val = e.target.value;
-          if (!val) editor.chain().focus().unsetFontSize().run();
-          else editor.chain().focus().setFontSize(val).run();
+          const v = e.target.value;
+          v ? editor.chain().focus().setFontSize(v).run()
+            : editor.chain().focus().unsetFontSize().run();
         }}
-        displayEmpty
         sx={{ fontSize: 12, height: 28, minWidth: 80, '.MuiSelect-select': { py: 0.25, px: 1 } }}
-        renderValue={val => val ? val.replace('px', '') : 'Tamaño'}
+        renderValue={v => v ? v.replace('px', '') : 'Tamaño'}
       >
         <MenuItem value="" sx={{ fontSize: 13 }}>Predeterminado</MenuItem>
         {FONT_SIZES.map(s => (
@@ -195,30 +159,27 @@ function RichToolbar({ editor }) {
       <Tooltip title="Color de texto">
         <IconButton size="small" onClick={() => colorRef.current?.click()} sx={{ position: 'relative' }}>
           <FormatColorTextIcon fontSize="small" />
-          <input
-            ref={colorRef}
-            type="color"
+          <input ref={colorRef} type="color"
             style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
-            onChange={e => editor.chain().focus().setColor(e.target.value).run()}
-          />
+            onChange={e => editor.chain().focus().setColor(e.target.value).run()} />
         </IconButton>
       </Tooltip>
 
       <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
 
-      <Tooltip title="Alinear izquierda">
+      <Tooltip title="Izquierda">
         <IconButton size="small" onClick={() => editor.chain().focus().setTextAlign('left').run()}
           color={editor.isActive({ textAlign: 'left' }) ? 'primary' : 'default'}>
           <FormatAlignLeftIcon fontSize="small" />
         </IconButton>
       </Tooltip>
-      <Tooltip title="Centrar">
+      <Tooltip title="Centro">
         <IconButton size="small" onClick={() => editor.chain().focus().setTextAlign('center').run()}
           color={editor.isActive({ textAlign: 'center' }) ? 'primary' : 'default'}>
           <FormatAlignCenterIcon fontSize="small" />
         </IconButton>
       </Tooltip>
-      <Tooltip title="Alinear derecha">
+      <Tooltip title="Derecha">
         <IconButton size="small" onClick={() => editor.chain().focus().setTextAlign('right').run()}
           color={editor.isActive({ textAlign: 'right' }) ? 'primary' : 'default'}>
           <FormatAlignRightIcon fontSize="small" />
@@ -251,24 +212,16 @@ function RichToolbar({ editor }) {
 
 export default function EmailEditor({
   subject, body, onSubjectChange, onBodyChange,
-  inputMode: controlledInputMode,
-  onInputModeChange,
   variables = [],
 }) {
-  const [viewMode, setViewMode]             = useState('edit');
-  const [internalInputMode, setInternalInputMode] = useState('plain');
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const [imageError, setImageError]         = useState('');
+  const [viewMode, setViewMode] = useState('edit');
+  const [imageError, setImageError] = useState('');
   const fileInputRef   = useRef(null);
-  const bodyRef        = useRef(null);
   const isInternalEdit = useRef(false);
-
-  const inputMode = controlledInputMode ?? internalInputMode;
 
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Underline,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       TextStyle,
       Color,
@@ -282,89 +235,46 @@ export default function EmailEditor({
     },
   });
 
-  // Sincroniza el contenido externo (ej. al abrir otra plantilla) en TipTap
+  // Sincroniza cuando se abre una plantilla diferente
   useEffect(() => {
-    if (!editor || inputMode !== 'plain') return;
+    if (!editor) return;
     if (isInternalEdit.current) { isInternalEdit.current = false; return; }
     const html = ensureHtml(body);
-    if (html !== editor.getHTML()) {
-      editor.commands.setContent(html, false);
-    }
-    if (html !== body) onBodyChange(html);
-  }, [body, editor, inputMode]);
+    if (html !== editor.getHTML()) editor.commands.setContent(html, false);
+  }, [body, editor]);
 
   const insertVariable = (token) => {
-    if (inputMode === 'plain' && editor) {
-      editor.chain().focus().insertContent(token).run();
-    } else {
-      const el = bodyRef.current?.querySelector('textarea');
-      if (el) {
-        const start = el.selectionStart ?? body.length;
-        const end   = el.selectionEnd   ?? body.length;
-        onBodyChange(body.slice(0, start) + token + body.slice(end));
-        setTimeout(() => {
-          el.selectionStart = el.selectionEnd = start + token.length;
-          el.focus();
-        }, 0);
-      } else {
-        onBodyChange(body + token);
-      }
-    }
+    editor?.chain().focus().insertContent(token).run();
   };
 
-  const handleModeSwitch = (_, val) => {
-    if (!val) return;
-    if (controlledInputMode === undefined) setInternalInputMode(val);
-    onInputModeChange?.(val);
-  };
-
-  const handleImageUpload = async (e) => {
+  const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setImageError('');
-    setUploadingImage(true);
-    try {
-      const { data } = await mediaApi.uploadImage(file);
-      const tag = `<img src="${data.url}" alt="imagen" style="max-width:100%;height:auto;" />`;
-      if (inputMode === 'plain' && editor) {
-        editor.chain().focus().insertContent(tag).run();
-      } else {
-        onBodyChange(body + tag);
-      }
-    } catch (err) {
-      setImageError(err.response?.data || 'Error al subir la imagen.');
-    } finally {
-      setUploadingImage(false);
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError('El archivo supera el límite de 5 MB.');
       if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
     }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      editor?.chain().focus().insertContent(
+        `<img src="${ev.target.result}" alt="imagen" style="max-width:100%;height:auto;" />`
+      ).run();
+    };
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   return (
     <Box>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2} flexWrap="wrap" gap={1}>
         <Typography variant="subtitle1" fontWeight={600}>Contenido del Correo</Typography>
-        <Stack direction="row" spacing={1}>
-          <ToggleButtonGroup value={inputMode} exclusive onChange={handleModeSwitch} size="small">
-            <ToggleButton value="plain">
-              <EditIcon fontSize="small" sx={{ mr: 0.5 }} />Editor
-            </ToggleButton>
-            <ToggleButton value="html">
-              <CodeIcon fontSize="small" sx={{ mr: 0.5 }} />HTML
-            </ToggleButton>
-          </ToggleButtonGroup>
-          <ToggleButtonGroup value={viewMode} exclusive onChange={(_, v) => v && setViewMode(v)} size="small">
-            <ToggleButton value="edit"><EditIcon fontSize="small" sx={{ mr: 0.5 }} />Editar</ToggleButton>
-            <ToggleButton value="preview"><VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} />Vista Previa</ToggleButton>
-          </ToggleButtonGroup>
-        </Stack>
+        <ToggleButtonGroup value={viewMode} exclusive onChange={(_, v) => v && setViewMode(v)} size="small">
+          <ToggleButton value="edit"><EditIcon fontSize="small" sx={{ mr: 0.5 }} />Editar</ToggleButton>
+          <ToggleButton value="preview"><VisibilityIcon fontSize="small" sx={{ mr: 0.5 }} />Vista Previa</ToggleButton>
+        </ToggleButtonGroup>
       </Stack>
-
-      {inputMode === 'html' && (
-        <Alert severity="warning" sx={{ mb: 2 }} icon={false}>
-          Modo <strong>HTML</strong> — escribe etiquetas directamente. Las imágenes se insertan con el botón{' '}
-          <ImageIcon fontSize="inherit" sx={{ verticalAlign: 'middle' }} />.
-        </Alert>
-      )}
 
       <TextField
         fullWidth
@@ -382,16 +292,9 @@ export default function EmailEditor({
           </Tooltip>
           <Typography variant="caption" color="text.secondary">Variables fijas:</Typography>
           {FIXED_VARIABLES.map(({ token, label, color }) => (
-            <Chip
-              key={token}
-              label={label}
-              size="small"
-              color={color}
-              variant="outlined"
-              clickable
+            <Chip key={token} label={label} size="small" color={color} variant="outlined" clickable
               onClick={() => insertVariable(token)}
-              sx={{ fontFamily: 'monospace', fontSize: 12 }}
-            />
+              sx={{ fontFamily: 'monospace', fontSize: 12 }} />
           ))}
 
           {variables.length > 0 && (
@@ -399,90 +302,46 @@ export default function EmailEditor({
               <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
               <Typography variant="caption" color="text.secondary">Personalizadas:</Typography>
               {variables.map(name => (
-                <Chip
-                  key={name}
-                  label={name}
-                  size="small"
-                  color="secondary"
-                  clickable
+                <Chip key={name} label={name} size="small" color="secondary" clickable
                   onClick={() => insertVariable(`{{${name}}}`)}
-                  sx={{ fontFamily: 'monospace', fontSize: 12, bgcolor: '#f3e5f5' }}
-                />
+                  sx={{ fontFamily: 'monospace', fontSize: 12, bgcolor: '#f3e5f5' }} />
               ))}
             </>
           )}
 
           <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
 
-          <Tooltip title="Subir e insertar imagen (jpg, png, gif, webp — máx 5 MB)">
-            <span>
-              <IconButton
-                size="small"
-                color="primary"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingImage}
-                sx={{ border: '1px solid', borderColor: 'primary.main', borderRadius: 1, px: 1 }}
-              >
-                {uploadingImage ? <CircularProgress size={16} /> : <ImageIcon fontSize="small" />}
-                <Typography variant="caption" sx={{ ml: 0.5 }}>
-                  {uploadingImage ? 'Subiendo…' : 'Imagen'}
-                </Typography>
-              </IconButton>
-            </span>
+          <Tooltip title="Insertar imagen (jpg, png, gif, webp — máx 5 MB)">
+            <IconButton size="small" color="primary"
+              onClick={() => fileInputRef.current?.click()}
+              sx={{ border: '1px solid', borderColor: 'primary.main', borderRadius: 1, px: 1 }}>
+              <ImageIcon fontSize="small" />
+              <Typography variant="caption" sx={{ ml: 0.5 }}>Imagen</Typography>
+            </IconButton>
           </Tooltip>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".jpg,.jpeg,.png,.gif,.webp"
-            hidden
-            onChange={handleImageUpload}
-          />
+          <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.gif,.webp" hidden
+            onChange={handleImageUpload} />
         </Stack>
 
         {imageError && (
-          <Alert severity="error" sx={{ mt: 1 }} onClose={() => setImageError('')}>
-            {imageError}
-          </Alert>
+          <Alert severity="error" sx={{ mt: 1 }} onClose={() => setImageError('')}>{imageError}</Alert>
         )}
       </Box>
 
       {viewMode === 'edit' ? (
-        inputMode === 'plain' ? (
-          <Paper variant="outlined" sx={{
-            overflow: 'hidden',
-            '& .ProseMirror': {
-              minHeight: 280,
-              maxHeight: 500,
-              overflowY: 'auto',
-              p: 2,
-              outline: 'none',
-              fontSize: 14,
-              lineHeight: 1.7,
-              fontFamily: 'inherit',
-              '& p': { margin: '0 0 8px 0' },
-              '& ul, & ol': { paddingLeft: '1.5rem' },
-              '& img': { maxWidth: '100%', height: 'auto' },
-              '& h1, & h2, & h3': { margin: '0 0 8px 0' },
-            },
-          }}>
-            <RichToolbar editor={editor} />
-            <EditorContent editor={editor} />
-          </Paper>
-        ) : (
-          <Box ref={bodyRef}>
-            <TextField
-              fullWidth
-              multiline
-              minRows={14}
-              maxRows={28}
-              label="Cuerpo del correo (HTML)"
-              value={body}
-              onChange={(e) => onBodyChange(e.target.value)}
-              inputProps={{ style: { fontFamily: 'monospace', fontSize: 13 } }}
-              placeholder={`<p>Estimado/a <strong>{{nombre}}</strong>,</p>\n<p>Tus credenciales: {{usuario}} / {{contrasena}}</p>`}
-            />
-          </Box>
-        )
+        <Paper variant="outlined" sx={{
+          overflow: 'hidden',
+          '& .ProseMirror': {
+            minHeight: 280, maxHeight: 500, overflowY: 'auto',
+            p: 2, outline: 'none', fontSize: 14, lineHeight: 1.7,
+            '& p': { margin: '0 0 8px 0' },
+            '& ul, & ol': { paddingLeft: '1.5rem' },
+            '& img': { maxWidth: '100%', height: 'auto' },
+          },
+        }}>
+          <RichToolbar editor={editor} />
+          <EditorContent editor={editor} />
+        </Paper>
       ) : (
         <Paper variant="outlined" sx={{ p: 3, minHeight: 300, bgcolor: '#fafafa' }}>
           <Typography variant="caption" color="text.secondary" display="block" mb={1.5}>
@@ -490,15 +349,10 @@ export default function EmailEditor({
             {variables.length > 0 && ' — las variables personalizadas aparecen en morado'}
           </Typography>
           <Divider sx={{ mb: 2 }} />
-          <div
-            style={{ lineHeight: 1.7, fontSize: 14 }}
+          <div style={{ lineHeight: 1.7, fontSize: 14 }}
             dangerouslySetInnerHTML={{
-              __html: DOMPurify.sanitize(
-                renderPreview(body, inputMode === 'html', variables),
-                { USE_PROFILES: { html: true } }
-              ),
-            }}
-          />
+              __html: DOMPurify.sanitize(renderPreview(body, variables), { USE_PROFILES: { html: true } }),
+            }} />
         </Paper>
       )}
     </Box>

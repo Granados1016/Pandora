@@ -11,7 +11,11 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PersonIcon from '@mui/icons-material/Person';
-import { userApi } from '../api/pandoraApi';
+import BackupIcon from '@mui/icons-material/Backup';
+import SaveIcon from '@mui/icons-material/Save';
+import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
+import BadgeIcon from '@mui/icons-material/Badge';
+import { userApi, adminApi, ticketApi } from '../api/pandoraApi';
 import { MODULE_LABELS, MODULES, useAuth } from '../hooks/useAuth.jsx';
 
 const ALL_MODULES = Object.entries(MODULE_LABELS).map(([value, label]) => ({
@@ -25,7 +29,7 @@ const ALL_MODULES_VALUE = Object.entries(MODULE_LABELS)
 
 const EMPTY_FORM = {
   username: '', fullName: '', email: '', position: '',
-  password: '', role: 'User', modules: MODULES.BIBLIOTECA, isActive: true,
+  password: '', role: 'User', modules: 0, isActive: true,
 };
 
 export default function Admin() {
@@ -38,6 +42,89 @@ export default function Admin() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+
+  // ── Backup ────────────────────────────────────────────────────────────────
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [backupMsg,     setBackupMsg]     = useState('');
+
+  const handleBackup = async () => {
+    setBackupLoading(true);
+    setBackupMsg('');
+    try {
+      await adminApi.downloadBackup();
+      setBackupMsg('✅ Backup descargado correctamente.');
+    } catch (e) {
+      setBackupMsg(`❌ Error: ${e.message}`);
+    } finally {
+      setBackupLoading(false);
+    }
+  };
+
+  // ── Catálogo de Puestos — HelpDesk ───────────────────────────────────────
+  const [areaConfigs,        setAreaConfigs]        = useState([]);
+  const [areaConfigsLoading, setAreaConfigsLoading] = useState(false);
+  const [areaConfigsSaving,  setAreaConfigsSaving]  = useState(false);
+  const [areaConfigsMsg,     setAreaConfigsMsg]     = useState('');
+
+  // Diálogo "Nuevo Puesto"
+  const [posDialog,     setPosDialog]     = useState(false);
+  const [posName,       setPosName]       = useState('');
+  const [posSaving,     setPosSaving]     = useState(false);
+  const [posError,      setPosError]      = useState('');
+
+  const loadAreaConfigs = () => {
+    setAreaConfigsLoading(true);
+    ticketApi.getAreaConfigs()
+      .then(r => setAreaConfigs(r.data))
+      .catch(() => setAreaConfigsMsg('❌ Error al cargar los puestos.'))
+      .finally(() => setAreaConfigsLoading(false));
+  };
+
+  React.useEffect(() => { loadAreaConfigs(); }, []);
+
+  const saveAreaConfigs = async () => {
+    setAreaConfigsSaving(true);
+    setAreaConfigsMsg('');
+    try {
+      await ticketApi.updateAreaConfigs(areaConfigs);
+      setAreaConfigsMsg('✅ Correos guardados correctamente.');
+    } catch {
+      setAreaConfigsMsg('❌ Error al guardar.');
+    } finally {
+      setAreaConfigsSaving(false);
+    }
+  };
+
+  const handleAddPosition = async () => {
+    if (!posName.trim()) { setPosError('El nombre del puesto es requerido.'); return; }
+    setPosSaving(true);
+    setPosError('');
+    try {
+      const { data } = await ticketApi.createPosition(posName.trim());
+      setAreaConfigs(prev => [...prev, data]);
+      setPosDialog(false);
+      setPosName('');
+      setAreaConfigsMsg('✅ Puesto creado correctamente.');
+    } catch (e) {
+      setPosError(e.response?.data || e.message || 'Error al crear el puesto.');
+    } finally {
+      setPosSaving(false);
+    }
+  };
+
+  const handleDeletePosition = async (cfg) => {
+    if (!confirm(`¿Eliminar el puesto "${cfg.area}"?\nSolo se puede eliminar si no tiene tickets asociados.`)) return;
+    try {
+      await ticketApi.deletePosition(cfg.id);
+      setAreaConfigs(prev => prev.filter(c => c.id !== cfg.id));
+      setAreaConfigsMsg('✅ Puesto eliminado.');
+    } catch (e) {
+      const msg = e.response?.status === 409
+        ? 'No se puede eliminar: existen tickets asociados a este puesto.'
+        : (e.response?.data || 'Error al eliminar el puesto.');
+      setAreaConfigsMsg(`❌ ${msg}`);
+    }
+  };
 
   const load = () =>
     userApi.getAll()
@@ -138,12 +225,172 @@ export default function Admin() {
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
         <Stack direction="row" alignItems="center" spacing={1.5}>
           <AdminPanelSettingsIcon color="primary" sx={{ fontSize: 32 }} />
-          <Typography variant="h4" fontWeight={800} color="primary.main">Administración de Usuarios</Typography>
+          <Typography variant="h4" fontWeight={800} color="primary.main">Administración</Typography>
         </Stack>
         <Button variant="contained" startIcon={<AddIcon />} onClick={openNew}>Nuevo Usuario</Button>
       </Stack>
 
       {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>{error}</Alert>}
+
+      {/* ── Backup de base de datos ──────────────────────────────────────── */}
+      <Card sx={{ mb: 4 }}>
+        <CardContent>
+          <Stack direction="row" alignItems="center" spacing={1.5} mb={2}>
+            <BackupIcon color="primary" sx={{ fontSize: 26 }} />
+            <Typography variant="h6" fontWeight={700}>Backup de Base de Datos</Typography>
+          </Stack>
+          <Typography variant="body2" color="text.secondary" mb={2}>
+            Descarga una copia de seguridad completa de la base de datos en formato <strong>.bak</strong> (SQL Server) o <strong>.sql</strong> (LocalDB).
+          </Typography>
+          {backupMsg && (
+            <Alert severity={backupMsg.startsWith('✅') ? 'success' : 'error'} sx={{ mb: 2 }} onClose={() => setBackupMsg('')}>
+              {backupMsg}
+            </Alert>
+          )}
+          <Button
+            variant="contained" startIcon={backupLoading ? <CircularProgress size={18} color="inherit" /> : <BackupIcon />}
+            onClick={handleBackup} disabled={backupLoading}
+            sx={{ borderRadius: 2 }}
+          >
+            {backupLoading ? 'Generando backup...' : 'Descargar Backup'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* ── Catálogo de Puestos — HelpDesk ──────────────────────────────── */}
+      <Card sx={{ mb: 4 }}>
+        <CardContent>
+          {/* Header */}
+          <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }}
+            justifyContent="space-between" spacing={1.5} mb={1}>
+            <Stack direction="row" alignItems="center" spacing={1.5}>
+              <BadgeIcon color="primary" sx={{ fontSize: 26 }} />
+              <Box>
+                <Typography variant="h6" fontWeight={700}>Catálogo de Puestos — HelpDesk</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Define los puestos disponibles en el formulario de tickets y configura el correo de notificación de cada uno.
+                </Typography>
+              </Box>
+            </Stack>
+            <Button
+              variant="contained" startIcon={<AddIcon />}
+              onClick={() => { setPosDialog(true); setPosName(''); setPosError(''); }}
+              sx={{ borderRadius: 2, whiteSpace: 'nowrap', flexShrink: 0 }}
+            >
+              Nuevo Puesto
+            </Button>
+          </Stack>
+
+          {areaConfigsMsg && (
+            <Alert severity={areaConfigsMsg.startsWith('✅') ? 'success' : 'error'}
+              sx={{ mb: 2 }} onClose={() => setAreaConfigsMsg('')}>
+              {areaConfigsMsg}
+            </Alert>
+          )}
+
+          {areaConfigsLoading ? (
+            <Box textAlign="center" py={4}><CircularProgress /></Box>
+          ) : (
+            <>
+              <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, mb: 2 }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: 'primary.50' }}>
+                      <TableCell sx={{ fontWeight: 700, width: 40 }}>#</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Puesto</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Correo de notificación</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 700, width: 60 }}></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {areaConfigs.map((cfg, idx) => (
+                      <TableRow key={cfg.id ?? idx} hover>
+                        <TableCell sx={{ color: 'text.disabled', fontSize: 12 }}>{idx + 1}</TableCell>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight={600}>{cfg.area}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            size="small" fullWidth type="email"
+                            placeholder={`notificaciones@imet.edu.mx`}
+                            value={cfg.notificationEmail ?? ''}
+                            onChange={e => setAreaConfigs(prev =>
+                              prev.map((c, i) => i === idx ? { ...c, notificationEmail: e.target.value } : c)
+                            )}
+                            sx={{ '& .MuiInputBase-root': { fontSize: 13 } }}
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Tooltip title="Eliminar puesto">
+                            <IconButton size="small" color="error" onClick={() => handleDeletePosition(cfg)}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {areaConfigs.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                          No hay puestos registrados. Agrega el primero.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Button
+                  variant="contained"
+                  startIcon={areaConfigsSaving ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
+                  onClick={saveAreaConfigs} disabled={areaConfigsSaving || areaConfigs.length === 0}
+                  sx={{ borderRadius: 2 }}
+                >
+                  {areaConfigsSaving ? 'Guardando...' : 'Guardar correos'}
+                </Button>
+                <Typography variant="caption" color="text.secondary">
+                  <MarkEmailReadIcon sx={{ fontSize: 14, mr: 0.5, verticalAlign: 'middle' }} />
+                  Al crear un ticket se enviará notificación al correo del puesto seleccionado.
+                </Typography>
+              </Stack>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Diálogo nuevo puesto */}
+      <Dialog open={posDialog} onClose={() => setPosDialog(false)} maxWidth="xs" fullWidth>
+        <DialogTitle fontWeight={700}>Nuevo Puesto</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Stack spacing={2} mt={0.5}>
+            <TextField
+              label="Nombre del puesto" fullWidth autoFocus
+              value={posName}
+              onChange={e => { setPosName(e.target.value); setPosError(''); }}
+              placeholder="Ej: Coordinación de Recursos Humanos"
+              inputProps={{ maxLength: 100 }}
+              onKeyDown={e => { if (e.key === 'Enter') handleAddPosition(); }}
+            />
+            {posError && <Alert severity="error">{posError}</Alert>}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setPosDialog(false)}>Cancelar</Button>
+          <Button
+            variant="contained" onClick={handleAddPosition}
+            disabled={posSaving || !posName.trim()}
+          >
+            {posSaving ? <CircularProgress size={18} /> : 'Crear Puesto'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Usuarios ──────────────────────────────────────────────────────── */}
+      <Stack direction="row" alignItems="center" spacing={1.5} mb={2}>
+        <PersonIcon color="primary" sx={{ fontSize: 26 }} />
+        <Typography variant="h6" fontWeight={700}>Gestión de Usuarios</Typography>
+      </Stack>
 
       <Card>
         <CardContent sx={{ p: 0 }}>
@@ -279,18 +526,12 @@ export default function Admin() {
                 {/* Selector rápido */}
                 <RadioGroup
                   row
-                  value={
-                    form.modules === MODULES.BIBLIOTECA ? 'biblioteca'
-                    : form.modules === ALL_MODULES_VALUE ? 'todos'
-                    : 'personalizado'
-                  }
+                  value={form.modules === ALL_MODULES_VALUE ? 'todos' : 'personalizado'}
                   onChange={e => {
-                    if (e.target.value === 'biblioteca') setForm(f => ({ ...f, modules: MODULES.BIBLIOTECA }));
-                    else if (e.target.value === 'todos')  setForm(f => ({ ...f, modules: ALL_MODULES_VALUE }));
+                    if (e.target.value === 'todos') setForm(f => ({ ...f, modules: ALL_MODULES_VALUE }));
                   }}
                   sx={{ mb: 1 }}
                 >
-                  <FormControlLabel value="biblioteca"  control={<Radio size="small" />} label="Solo Biblioteca Virtual" />
                   <FormControlLabel value="todos"       control={<Radio size="small" />} label="Todos los módulos" />
                   <FormControlLabel value="personalizado" control={<Radio size="small" />} label="Personalizado" />
                 </RadioGroup>

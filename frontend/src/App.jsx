@@ -26,11 +26,21 @@ import InventoryTypes     from './pages/inventory/InventoryTypes';
 import Departments        from './pages/catalogs/Departments';
 import Employees          from './pages/catalogs/Employees';
 
+// ── Licencias ─────────────────────────────────────────────────────────────────
+import Licencias from './pages/Licencias';
+
+// ── Tickets ───────────────────────────────────────────────────────────────────
+import TicketTemplateBuilder from './pages/tickets/TicketTemplateBuilder';
+import TicketsListPage       from './pages/tickets/TicketsListPage';
+import TicketFormPage        from './pages/tickets/TicketFormPage';
+import TicketDetailPage      from './pages/tickets/TicketDetailPage';
+
 // ── Calendario ────────────────────────────────────────────────────────────────
 import CalendarPage        from './pages/calendar/CalendarPage';
 import RoomsManager        from './pages/calendar/RoomsManager';
 import RoomRequestForm     from './pages/calendar/RoomRequestForm';
 import RoomRequestsManager from './pages/calendar/RoomRequestsManager';
+import CalendarReports     from './pages/calendar/CalendarReports';
 
 // ── ProtectedRoute ────────────────────────────────────────────────────────────
 // Props:
@@ -133,6 +143,35 @@ function AppRoutes() {
                 </ProtectedRoute>
               } />
 
+              {/* ── Tickets ─────────────────────────────────────────────── */}
+              <Route path="/tickets/template" element={
+                <ProtectedRoute adminOnly>
+                  <TicketTemplateBuilder />
+                </ProtectedRoute>
+              } />
+              <Route path="/tickets/new" element={
+                <ProtectedRoute requiredModule={MODULES.HELPDESK}>
+                  <TicketFormPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/tickets/:id" element={
+                <ProtectedRoute requiredModule={MODULES.HELPDESK}>
+                  <TicketDetailPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/tickets" element={
+                <ProtectedRoute requiredModule={MODULES.HELPDESK}>
+                  <TicketsListPage />
+                </ProtectedRoute>
+              } />
+
+              {/* ── Licencias ───────────────────────────────────────────── */}
+              <Route path="/licencias" element={
+                <ProtectedRoute requiredModule={MODULES.LICENCIAS}>
+                  <Licencias />
+                </ProtectedRoute>
+              } />
+
               {/* ── Calendario ──────────────────────────────────────────── */}
               <Route path="/calendar" element={
                 <ProtectedRoute requiredModule={MODULES.CALENDARIO}>
@@ -152,6 +191,11 @@ function AppRoutes() {
               <Route path="/calendar/solicitudes" element={
                 <ProtectedRoute requiredModule={MODULES.CALENDARIO_ADMIN}>
                   <RoomRequestsManager />
+                </ProtectedRoute>
+              } />
+              <Route path="/calendar/reports" element={
+                <ProtectedRoute requiredModule={MODULES.CALENDARIO_ADMIN}>
+                  <CalendarReports />
                 </ProtectedRoute>
               } />
 

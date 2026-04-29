@@ -1,7 +1,10 @@
 import axios from 'axios';
 
+const BACKEND = import.meta.env.VITE_BACKEND_URL ?? '';
+const BASE_URL = BACKEND ? `${BACKEND}/api` : '/api';
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -62,7 +65,7 @@ api.interceptors.response.use(
 
     try {
       // Llamada directa con axios (no pasa por los interceptores de `api`)
-      const { data } = await axios.post('/api/auth/refresh', { refreshToken });
+      const { data } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
 
       const newToken        = data.token;
       const newRefreshToken = data.refreshToken;
@@ -123,7 +126,7 @@ export const campaignApi = {
   getRecipients:(id)       => api.get(`/campaigns/${id}/recipients`),
   exportUrl:    (id) => {
     const token = localStorage.getItem('pandora_token');
-    return `/api/campaigns/${id}/export?access_token=${token}`;
+    return `${BASE_URL}/campaigns/${id}/export?access_token=${token}`;
   },
 };
 
@@ -179,11 +182,11 @@ export const inventoryApi = {
 
   exportUrl: () => {
     const token = localStorage.getItem('pandora_token');
-    return `/api/inventory/excel/export?access_token=${token}`;
+    return `${BASE_URL}/inventory/excel/export?access_token=${token}`;
   },
   templateUrl: () => {
     const token = localStorage.getItem('pandora_token');
-    return `/api/inventory/excel/template?access_token=${token}`;
+    return `${BASE_URL}/inventory/excel/template?access_token=${token}`;
   },
   importPreview: (file) => {
     const form = new FormData();
@@ -200,6 +203,8 @@ export const calendarApi = {
   createRoom: (data)     => api.post('/calendar/rooms', data),
   updateRoom: (id, data) => api.put(`/calendar/rooms/${id}`, data),
   deleteRoom: (id)       => api.delete(`/calendar/rooms/${id}`),
+
+  getReports: () => api.get('/calendar/reports'),
 
   getReservations: (rangeStart, rangeEnd, roomId) =>
     api.get('/calendar/reservations', { params: { rangeStart, rangeEnd, ...(roomId ? { roomId } : {}) } }),
@@ -234,6 +239,70 @@ export const recipientApi = {
     return api.post('/recipients/parse-csv', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+  },
+};
+
+export const licenciasApi = {
+  getAll:    (params = {}) => api.get('/licencias', { params }),
+  getById:   (id)          => api.get(`/licencias/${id}`),
+  dashboard: ()            => api.get('/licencias/dashboard'),
+  alertas:   ()            => api.get('/licencias/alertas'),
+  create:    (data)        => api.post('/licencias', data),
+  update:    (id, data)    => api.put(`/licencias/${id}`, data),
+  delete:    (id)          => api.delete(`/licencias/${id}`),
+  actualizarEstados: ()    => api.put('/licencias/actualizar-estados'),
+  exportar: async () => {
+    const token = localStorage.getItem('pandora_token');
+    const url   = `${BASE_URL}/licencias/exportar`;
+    const res   = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error(await res.text());
+    const blob     = await res.blob();
+    const filename = res.headers.get('Content-Disposition')?.match(/filename="?([^"]+)"?/)?.[1]
+                     || `iMET_Control_Licencias_${new Date().toISOString().slice(0,10)}.xlsx`;
+    const href = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = href; a.download = filename; a.click();
+    URL.revokeObjectURL(href);
+  },
+};
+
+export const ticketApi = {
+  // Template
+  getTemplate:      ()           => api.get('/tickets/template'),
+  updateTemplate:   (data)       => api.put('/tickets/template', data),
+  addField:         (data)       => api.post('/tickets/template/fields', data),
+  updateField:      (id, data)   => api.put(`/tickets/template/fields/${id}`, data),
+  deleteField:      (id)         => api.delete(`/tickets/template/fields/${id}`),
+  reorderFields:    (items)      => api.put('/tickets/template/fields/reorder', items),
+  // Puestos — catálogo
+  getPositions:     ()           => api.get('/tickets/positions'),
+  createPosition:   (area)       => api.post('/tickets/area-configs', { area }),
+  deletePosition:   (id)         => api.delete(`/tickets/area-configs/${id}`),
+  // Area configs (correos de notificación + gestión admin)
+  getAreaConfigs:   ()           => api.get('/tickets/area-configs'),
+  updateAreaConfigs:(configs)    => api.put('/tickets/area-configs', configs),
+  // Tickets
+  getAll:           (params)     => api.get('/tickets', { params }),
+  getById:          (id)         => api.get(`/tickets/${id}`),
+  create:           (formData)   => api.post('/tickets', formData),
+  updateStatus:     (id, data)   => api.put(`/tickets/${id}/status`, data),
+  addComment:       (id, data)   => api.post(`/tickets/${id}/comments`, data),
+  delete:           (id)         => api.delete(`/tickets/${id}`),
+};
+
+export const adminApi = {
+  downloadBackup: async () => {
+    const token = localStorage.getItem('pandora_token');
+    const url   = `${BASE_URL}/admin/backup/download`;
+    const res   = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error(await res.text());
+    const blob     = await res.blob();
+    const filename = res.headers.get('Content-Disposition')?.match(/filename="?([^"]+)"?/)?.[1]
+                     || `PandoraDB_${new Date().toISOString().slice(0,10)}.sql`;
+    const href = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = href; a.download = filename; a.click();
+    URL.revokeObjectURL(href);
   },
 };
 
