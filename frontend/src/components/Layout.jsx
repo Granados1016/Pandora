@@ -35,6 +35,7 @@ import ExpandLessIcon           from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon           from '@mui/icons-material/ExpandMore';
 
 import { useAuth, MODULES } from '../hooks/useAuth.jsx';
+import PandoraAI            from './PandoraAI';
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 const EXPANDED_W  = 260;
@@ -503,6 +504,9 @@ export default function Layout({ children }) {
       >
         {children}
       </Box>
+
+      {/* ── Azul AI — botón flotante + drawer ─────────────────────────────── */}
+      <PandoraAI />
     </Box>
   );
 }
